@@ -1,0 +1,39 @@
+# R Environment
+.Rproj.user/
+.Rhistory
+.RData
+.Ruserdata
+
+# Python Environment
+.venv/
+__pycache__/
+
+# Quarto
+.quarto/
+/_site/
+*.html
+_freeze/
+
+# Shiny
+rsconnect/
+
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Data files - avoid tracking synthetic data; regenerate with
+#   uv run python data/generate_data.py
+data/*.csv
+data/*.duckdb
+mcp/*.duckdb
+
+# Generated chart output from the ggsql runner
+outputs/
+
+# Claude Code
+.claude/settings.local.json

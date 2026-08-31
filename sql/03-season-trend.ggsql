@@ -1,0 +1,29 @@
+-- ggsql: one line per hybrid across five seasons.
+-- This project contains synthetic data and analysis created for demonstration
+-- purposes only.
+--
+-- 2023 was the dry season in this synthetic network (about 30% below normal
+-- rainfall). Watch what happens to the gaps between the lines: the ranking barely
+-- changes, but the drought-tolerant hybrids give up much less than the
+-- high-potential ones. That narrowing is the agronomic point, and it is the kind
+-- of thing you see in a chart and not in a table.
+--
+-- Run it:  uv run python python/run_ggsql.py sql/03-season-trend.ggsql
+
+SELECT
+    -- Cast the year to text so the axis reads "2023" and not "2,023": the chart
+    -- library formats a number, and a year is a label.
+    CAST(season AS VARCHAR) AS season_label,
+    variety,
+    avg(yield_t_ha) AS mean_yield
+FROM field_trials
+WHERE treatment = 'Programme Bravo'
+GROUP BY season, variety
+ORDER BY season
+VISUALISE season_label AS x, mean_yield AS y, variety AS color
+DRAW line
+DRAW point
+LABEL title => 'The dry season narrows the gap between hybrids',
+      subtitle => 'Protected plots only (Programme Bravo). 2023 rainfall ran ~30% below normal.',
+      x => 'Season',
+      y => 'Mean yield (t/ha)'

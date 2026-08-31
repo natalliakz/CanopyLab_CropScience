@@ -1,0 +1,30 @@
+-- ggsql: SQL that ends in a chart.
+-- This project contains synthetic data and analysis created for demonstration
+-- purposes only.
+--
+-- Everything above VISUALISE is ordinary SQL that runs in the database. The
+-- clauses below it are the grammar of graphics: VISUALISE maps columns to
+-- aesthetics, DRAW picks the mark, LABEL writes the titles. No dataframe, no
+-- plotting library, no second language.
+--
+-- A dot per hybrid and programme rather than a bar chart, on purpose: bars with a
+-- fill aesthetic stack, and stacked means add up to a number that does not exist.
+-- Three dots on a row show both the ranking and the size of each gap.
+--
+-- Note: keep "--" out of LABEL strings. ggsql strips SQL comments before handing
+-- the query to the database, and a double dash inside a quoted label trips it up.
+--
+-- Run it:  uv run python python/run_ggsql.py sql/02-treatment-response.ggsql
+
+SELECT
+    variety,
+    treatment,
+    avg(yield_t_ha) AS mean_yield
+FROM field_trials
+GROUP BY variety, treatment
+VISUALISE mean_yield AS x, variety AS y, treatment AS color
+DRAW point
+LABEL title => 'Every hybrid gains from a protection programme, by different amounts',
+      subtitle => 'Mean of 20 plots per dot. Untreated Check is the agronomic control.',
+      x => 'Mean yield (t/ha)',
+      y => 'Hybrid'

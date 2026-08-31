@@ -1,0 +1,75 @@
+# Brand configuration for CanopyLab Agronomics, a fictional crop science company.
+#
+# This single file themes the Quarto report, the Shiny app, and the charts in the
+# Python notebook. To re-brand this demo for a customer, edit the palette below --
+# nothing in the analysis code names a color directly.
+#
+# Logo files are not included. Drop a PNG or SVG next to this file and uncomment
+# the `logo` block to use one.
+
+meta:
+  name:
+    short: CanopyLab
+    full: CanopyLab Agronomics
+  link:
+    home: https://example.com/canopylab
+
+# logo:
+#   small: logos/icon.png
+#   medium: logos/header-logo.png
+
+color:
+  palette:
+    white: "#FFFFFF"
+    black: "#1A1F1B"
+    # Field greens: the sequential ramp for anything that measures growth.
+    leaf: "#3E7B52"
+    canopy: "#2A5638"
+    sprout: "#8FBF7A"
+    # Soil and grain, for categorical contrast against the greens.
+    loam: "#8A6A4A"
+    grain: "#D8A93B"
+    sky: "#3D7CA8"
+    # Status colors, reserved: never reused as a categorical series.
+    clay: "#B4472E"
+    stone: "#6E7671"
+    mist: "#EFF3EE"
+    hairline: "#D6DED7"
+
+  foreground: black
+  background: white
+  primary: leaf
+  secondary: stone
+  success: leaf
+  info: sky
+  warning: grain
+  danger: clay
+  light: mist
+  dark: canopy
+
+typography:
+  fonts:
+    # Open Sans and Source Serif are Google fonts, so nothing needs installing for
+    # the HTML outputs. Install Open Sans locally if you want the matplotlib
+    # charts in the notebook to use it too; they fall back cleanly if you do not.
+    - family: Open Sans
+      source: google
+      weight: [400, 600, 700]
+    - family: Source Serif 4
+      source: google
+      weight: [600, 700]
+    - family: JetBrains Mono
+      source: google
+      weight: [400, 500]
+  base: Open Sans
+  headings:
+    family: Source Serif 4
+    weight: 600
+    color: canopy
+  monospace: JetBrains Mono
+  monospace-inline:
+    color: canopy
+    background-color: mist
+  link:
+    color: leaf
+    weight: 600

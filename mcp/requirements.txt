@@ -1,0 +1,6 @@
+# Connect installs exactly this into the content's environment, from Posit
+# Package Manager. `fastmcp` in here is also how Connect auto-detects that this
+# content is an MCP server rather than a plain FastAPI API.
+fastmcp==4.0.0
+duckdb==1.5.5
+uvicorn==0.41.0

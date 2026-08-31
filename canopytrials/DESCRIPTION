@@ -1,0 +1,26 @@
+Package: canopytrials
+Title: Shared Field Trial Helpers for CanopyLab Agronomics
+Version: 0.1.0
+Authors@R:
+    person("CanopyLab", "Agronomics", email = "agronomy@example.com", role = c("aut", "cre"))
+Description: The data access and summary functions that CanopyLab's field trial
+    reports, dashboards and services all share. Wrapping them in a package rather
+    than copying them between projects means one definition of "yield response",
+    tested once and versioned. This package contains synthetic data and analysis
+    created for demonstration purposes only.
+License: MIT + file LICENSE
+Encoding: UTF-8
+Depends:
+    R (>= 4.1)
+Imports:
+    DBI,
+    dplyr,
+    duckdb,
+    ggplot2,
+    readr,
+    rlang,
+    tidyr
+Suggests:
+    testthat (>= 3.0.0)
+Config/testthat/edition: 3
+Config/roxygen2/version: 8.1.0

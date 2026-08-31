@@ -1,0 +1,24 @@
+-- ggsql: the dose-response that justifies the whole programme.
+-- This project contains synthetic data and analysis created for demonstration
+-- purposes only.
+--
+-- One point per plot (1,800 of them), a fitted trend through each panel, and one
+-- panel per protection programme. The untreated panel spans the full range of
+-- disease pressure; the treated panels are squeezed into the left-hand end,
+-- which is exactly what a working programme looks like.
+--
+-- Run it:  uv run python python/run_ggsql.py sql/04-disease-vs-yield.ggsql
+
+SELECT
+    disease_pressure_index,
+    yield_t_ha,
+    treatment
+FROM field_trials
+VISUALISE disease_pressure_index AS x, yield_t_ha AS y, treatment AS color
+DRAW point
+DRAW smooth
+FACET treatment
+LABEL title => 'Yield falls as disease pressure rises; the programme moves plots left',
+      subtitle => 'One point per plot, 1,800 in total, with a fitted trend per panel.',
+      x => 'Disease pressure index (0-100)',
+      y => 'Yield (t/ha)'

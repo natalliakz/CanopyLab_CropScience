@@ -1,0 +1,88 @@
+# Publish everything in this project to Posit Connect when main moves.
+#
+# This is the "get out of the local mindset" workflow. Nobody clicks Publish;
+# main is the source of truth for what is running, and the deployment record is
+# the commit history. Connect keeps the previous version, so a bad merge is a
+# rollback rather than an incident.
+#
+# Repository secrets required:
+#   CONNECT_SERVER   https://connect.example.com
+#   CONNECT_API_KEY  a Connect API key for the publishing account
+#
+# Note: these workflows assume this project directory is the repository root.
+# Inside the demobot monorepo, copy CanopyLab_CropScience/ out to its own repo
+# (or move .github/ up) before expecting Actions to pick them up.
+
+name: Deploy to Posit Connect
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: connect-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  content:
+    runs-on: ubuntu-latest
+    env:
+      CONNECT_SERVER: ${{ secrets.CONNECT_SERVER }}
+      CONNECT_API_KEY: ${{ secrets.CONNECT_API_KEY }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: true
+
+      - name: Set up R
+        uses: r-lib/actions/setup-r@v2
+        with:
+          use-public-rspm: true
+
+      - uses: quarto-dev/quarto-actions/setup@v2
+
+      # renv.lock and Posit Package Manager together are what make the CI
+      # runner, the Workbench session and the Connect host agree on versions.
+      - name: Restore R packages
+        uses: r-lib/actions/setup-renv@v2
+
+      - name: Install the internal package
+        run: R CMD INSTALL canopytrials
+
+      # The synthetic data is generated, not committed, so CI builds it. A real
+      # project would pull from the warehouse here instead.
+      - name: Generate the trial data
+        run: uv run python data/generate_data.py
+
+      - name: Publish the Quarto report
+        run: |
+          Rscript -e 'rsconnect::addServer(Sys.getenv("CONNECT_SERVER"), "connect")' \
+                  -e 'rsconnect::connectApiUser(account = "ci", server = "connect", apiKey = Sys.getenv("CONNECT_API_KEY"))' \
+                  -e 'rsconnect::deployDoc("trial-report.qmd", appName = "canopylab-trial-report", server = "connect", forceUpdate = TRUE)'
+
+      - name: Publish the Shiny app
+        run: |
+          Rscript -e 'rsconnect::deployApp(appDir = ".", appFiles = c("app.R", "_brand.yml", "data/synthetic-field-trials.csv", "data/synthetic-sites.csv"), appName = "canopylab-trial-explorer", server = "connect", forceUpdate = TRUE)'
+
+      - name: Publish the Jupyter notebook
+        run: |
+          uv run rsconnect deploy notebook \
+            --server "$CONNECT_SERVER" --api-key "$CONNECT_API_KEY" \
+            --title "CanopyLab field trial tour" \
+            notebooks/field-trial-tour.ipynb
+
+      # The MCP server needs the database inside its own bundle, because Connect
+      # unpacks the bundle somewhere of its own choosing.
+      - name: Publish the MCP server
+        run: |
+          cp data/synthetic-agronomy.duckdb mcp/synthetic-agronomy.duckdb
+          uv run rsconnect deploy fastapi \
+            --server "$CONNECT_SERVER" --api-key "$CONNECT_API_KEY" \
+            --entrypoint server:app \
+            --title "CanopyLab trials MCP" \
+            ./mcp

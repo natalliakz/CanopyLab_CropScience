@@ -1,0 +1,12 @@
+{
+  "mcpServers": {
+    "canopylab-trials": {
+      "type": "remote",
+      "url": "https://connect.example.com/canopylab-trials-mcp/mcp",
+      "headers": {
+        "Authorization": "Key {env:CONNECT_API_KEY}"
+      },
+      "enabled": true
+    }
+  }
+}
