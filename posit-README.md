@@ -133,6 +133,23 @@ by response to Programme Bravo. Show `/plan` for something larger, and mention
 `AGENTS.md` for project memory. Keep this short here; the payoff lands in Act 4
 when the Assistant is calling Connect-hosted tools.
 
+**2.8 A Python app, from the same project.**
+`uv run streamlit run streamlit_app.py`. Filter the regions, narrow to 2023,
+highlight a hybrid, and hover a dot — the Altair tooltips give the gain per hybrid.
+
+Two things to say while it is on screen:
+
+- It reads `python/trials.py`, and `trials.yield_response()` is the same definition
+  the R package pins — measured against the hybrid's own untreated check. The
+  Python team did not re-derive it from the Shiny app's SQL, and `uv run pytest`
+  holds them to it (`tests/test_trials.py`, eight tests including "refuses to guess
+  without a control").
+- Its charts read `_brand.yml`, the same file the Quarto report and the Shiny app
+  read. Same palette, no design review.
+
+If the room is Python-first, run this *before* the Shiny app in Act 3 and let
+`app.R` be the "and R too" moment rather than the other way around.
+
 **Where VS Code users land:** same keybindings available, same extensions story,
 plus the panes above and a real R session when they need one. This is the migration
 argument, and it is not "give up your editor" — it is "the same editor with the
@@ -144,11 +161,18 @@ data-science furniture."
 `yield_response()`, `site_summary()`, `theme_canopylab()`. Show
 `R/summaries.R` and then `tests/testthat/test-summaries.R`.
 
-The line to say: *"yield response" is defined exactly once, in a function, with a
-test that pins the definition — gain is always measured against the same hybrid's
-own untreated plots. The report, the dashboard and the Assistant's tools all call
-it. They cannot disagree about the number.* That is why R teams package things, and
-it is exactly the argument for a private Package Manager repository.
+The line to say: *"yield response" is defined exactly once per language, in a
+function, with a test that pins the definition — gain is always measured against
+the same hybrid's own untreated plots. The report, both dashboards and the
+Assistant's tools all call it. They cannot disagree about the number.* That is why
+R teams package things, and it is exactly the argument for a private Package
+Manager repository.
+
+If someone asks why there are two implementations at all: because the two teams
+work in two languages, and the alternative is not one implementation — it is five
+copies of the same SQL in five files. `tests/test_trials.py` asserts the Python
+result has the same shape and columns as the R one, so a rename on either side
+fails CI rather than surfacing as two different numbers on two dashboards.
 
 **3.2 The Quarto report.** Render `trial-report.qmd`. Point out:
 - `theme: brand` — the palette comes from `_brand.yml`, which the Shiny app and
@@ -161,7 +185,10 @@ it is exactly the argument for a private Package Manager repository.
 narrow the seasons to 2023, highlight a hybrid. Note that the value boxes and the
 table come from the same package functions as the report.
 
-Then say: *both of these are published the same way, and neither of them knows
+Put it beside the Streamlit app from 2.8 if you have the screen space: same
+filters, same numbers, same palette, two languages. Nobody had to pick a winner.
+
+Then say: *all three of these are published the same way, and none of them knows
 where it is running.*
 
 ## Act 4 — Git, CI/CD, Connect, and MCP in the Assistant (15 min)
@@ -182,10 +209,11 @@ Say: *this is the user management, log management and deployment surface, once, 
 everything — an R Shiny app, a Python notebook, an API, an MCP server.*
 
 **4.3 Now show the Git half.** Open
-`.github/workflows/deploy-connect.yml`. Walk the four publish steps: Quarto report,
-Shiny app, notebook, MCP server. Then `.github/workflows/check-package.yml`: every
-PR that touches `canopytrials` runs `R CMD check` and the tests before it can
-merge.
+`.github/workflows/deploy-connect.yml`. Walk the five publish steps: Quarto report,
+Shiny app, Streamlit app, notebook, MCP server. Then
+`.github/workflows/check-package.yml`: every PR runs two jobs — `R CMD check` on
+`canopytrials`, and `uv sync --locked` plus `pytest` on the Python module — before
+it can merge. One pipeline, both languages, no separate release process.
 
 The transformation Luis described, stated plainly: **`main` is the definition of
 what is running.** No one publishes from a laptop; no one wonders which version is
@@ -261,13 +289,14 @@ uv run python data/generate_data.py
 Rscript -e 'renv::restore()'
 R CMD INSTALL canopytrials
 quarto render trial-report.qmd
+uv run pytest                                # 8 tests, ~1s
 uv run python python/run_ggsql.py            # warms outputs/
 ```
 
 Then:
 
-1. Publish the four content items to your Connect demo server (`Rscript deploy.R`
-   plus the two printed commands), so Act 4 shows real content pages.
+1. Publish the five content items to your Connect demo server (`Rscript deploy.R`
+   plus the three printed commands), so Act 4 shows real content pages.
 2. Deploy the MCP server and configure `.posit/assistant/settings.json` with your
    Connect URL. Export `CONNECT_API_KEY` in the shell you launch Positron from,
    and confirm `/mcp` shows it connected. **Do this the day before** — it is the
@@ -282,6 +311,7 @@ Then:
 - [ ] Notebook run once, outputs visible, kernel alive
 - [ ] `trial-report.html` rendered and openable
 - [ ] Shiny app running locally in a spare terminal
+- [ ] Streamlit app running locally in another (`uv run streamlit run streamlit_app.py`)
 - [ ] Connect tab open on the deployed app's content page
 - [ ] `/mcp` confirmed connected in the Assistant panel
 - [ ] `CONNECT_SERVER` / `CONNECT_API_KEY` exported; **no keys visible on screen**
@@ -321,6 +351,10 @@ Package Manager all run in your VPC or on-prem, on your images.
   needs a home: a local source repository in Package Manager, or a Git remote that
   `renv` can install from. Worth saying out loud — it is a natural Package Manager
   segue.
+- Altair's PNG export needs font *stacks*, not `"Open Sans"` on its own: given a
+  font it cannot find, `vl-convert` renders the chart and silently drops every
+  label. `python/charts.py` names fallbacks. If you add a chart and the labels
+  vanish from a saved PNG, that is why — the browser is unaffected.
 - The `.ggsql` parser has three edges: no trailing semicolon, `LABEL` accepts
   `title`/`subtitle`/`x`/`y` only, and a `--` inside a quoted label string breaks
   execution. Do not improvise new labels on stage.

@@ -90,6 +90,16 @@ jobs:
         run: |
           Rscript -e 'rsconnect::deployApp(appDir = ".", appFiles = c("app.R", "_brand.yml", "data/synthetic-field-trials.csv", "data/synthetic-sites.csv"), appName = "canopylab-trial-explorer", server = "connect", forceUpdate = TRUE)'
 
+      - name: Publish the Streamlit app
+        if: steps.creds.outputs.publish == 'true'
+        run: |
+          uv run rsconnect deploy streamlit \
+            --server "$CONNECT_SERVER" --api-key "$CONNECT_API_KEY" \
+            --entrypoint streamlit_app.py \
+            --title "CanopyLab field trial explorer (Python)" \
+            --exclude '.venv' --exclude 'canopytrials' --exclude 'renv' \
+            .
+
       - name: Publish the Jupyter notebook
         if: steps.creds.outputs.publish == 'true'
         run: |
@@ -98,12 +108,14 @@ jobs:
             --title "CanopyLab field trial tour" \
             notebooks/field-trial-tour.ipynb
 
-      # The MCP server needs the database inside its own bundle, because Connect
-      # unpacks the bundle somewhere of its own choosing.
+      # The MCP server needs the database and the shared trials module inside its
+      # own bundle, because Connect unpacks the bundle somewhere of its own
+      # choosing and there is no parent project to reach up into.
       - name: Publish the MCP server
         if: steps.creds.outputs.publish == 'true'
         run: |
           cp data/synthetic-agronomy.duckdb mcp/synthetic-agronomy.duckdb
+          cp python/trials.py mcp/trials.py
           uv run rsconnect deploy fastapi \
             --server "$CONNECT_SERVER" --api-key "$CONNECT_API_KEY" \
             --entrypoint server:app \

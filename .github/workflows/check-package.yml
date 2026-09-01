@@ -1,23 +1,21 @@
-# Check the internal R package on every pull request.
+# Check the shared logic -- both copies of it -- on every pull request.
 #
-# The point of putting shared logic in canopytrials is that it can be tested
-# once instead of reviewed five times. This is where that pays off: a change to
-# the definition of "yield response" cannot reach main without the tests passing,
-# and the report, the dashboard and the MCP server all inherit that guarantee.
+# The point of putting shared logic in canopytrials (R) and python/trials.py
+# (Python) is that it can be tested once instead of reviewed five times. This is
+# where that pays off: a change to the definition of "yield response" cannot reach
+# main without both test suites passing, and the report, the two dashboards and the
+# MCP server all inherit that guarantee.
 
-name: Check canopytrials
+name: Checks
 
 on:
   pull_request:
-    paths:
-      - "canopytrials/**"
-      - ".github/workflows/check-package.yml"
   push:
     branches: [main]
   workflow_dispatch:
 
 jobs:
-  check:
+  r-package:
     runs-on: ubuntu-latest
     env:
       GITHUB_PAT: ${{ secrets.GITHUB_TOKEN }}
@@ -41,3 +39,27 @@ jobs:
           working-directory: canopytrials
           upload-snapshots: true
           args: 'c("--no-manual", "--as-cran")'
+
+  python:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: true
+
+      # uv.lock, not "latest": the runner installs the same versions a developer
+      # has locally, which is the Python half of the reproducibility story that
+      # renv.lock and Package Manager tell on the R side.
+      - name: Install the locked environment
+        run: uv sync --locked
+
+      - name: Test the shared trials module
+        run: uv run pytest -q
+
+      # The tests cover trials.py; this catches a syntax error in the app or the
+      # MCP server, which no test imports.
+      - name: Byte-compile the app and the server
+        run: uv run python -m compileall -q streamlit_app.py python mcp

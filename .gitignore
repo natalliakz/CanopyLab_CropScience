@@ -32,6 +32,9 @@ data/*.csv
 data/*.duckdb
 mcp/*.duckdb
 
+# Copied into the MCP bundle at deploy time; python/trials.py is the original
+mcp/trials.py
+
 # Generated chart output from the ggsql runner
 outputs/
 

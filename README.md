@@ -6,7 +6,7 @@ answer the same question every autumn: **which hybrid, at which station, under
 which programme?**
 
 This project is what that answer looks like when it is built on Posit Team — one
-project, two languages, four pieces of published content, and one Git history
+project, two languages, five pieces of published content, and one Git history
 that decides what is running in production.
 
 > **This project contains synthetic data and analysis created for demonstration
@@ -20,14 +20,16 @@ that decides what is running in production.
 | | File | What it demonstrates |
 |---|---|---|
 | **Data** | `data/generate_data.py` | 1,800 synthetic harvested plots → two CSVs and a DuckDB database |
-| **Package** | `canopytrials/` | The shared R package: data access, the definition of *yield response*, the brand theme. Tested with testthat. |
+| **R package** | `canopytrials/` | The shared R package: data access, the definition of *yield response*, the brand theme. Tested with testthat. |
+| **Python module** | `python/trials.py`, `python/charts.py` | The same shared logic for Python — polars + DuckDB, one definition of *yield response*, Altair chart builders. Tested with pytest (`tests/`). |
 | **Report** | `trial-report.qmd` | Quarto report in R — `gt` tables, ggplot2 charts, inline numbers that update on re-render |
-| **Dashboard** | `app.R` | Shiny app with `bslib`, filters, value boxes, and the same package underneath |
+| **R dashboard** | `app.R` | Shiny app with `bslib`, filters, value boxes, and the R package underneath |
+| **Python dashboard** | `streamlit_app.py` | Streamlit app with interactive Altair charts, the same filters and the same numbers, on the Python module |
 | **Notebook** | `notebooks/field-trial-tour.ipynb` | Python: polars, DuckDB, great_tables, scikit-learn, ggsql — written in Positron's notebook editor |
 | **SQL** | `sql/*.sql`, `sql/*.ggsql` | Plain SQL for the Connections pane, plus ggsql queries that draw charts straight from the database |
 | **Charts** | `python/run_ggsql.py` | Runs any `.ggsql` file to an interactive HTML chart and a PNG |
 | **Assistant tools** | `mcp/server.py` | An MCP server published to Connect, callable from Posit Assistant |
-| **CI/CD** | `.github/workflows/` | Publish to Connect on merge to `main`; check the R package on every PR |
+| **CI/CD** | `.github/workflows/` | Publish to Connect on merge to `main`; check the R package and run the Python tests on every PR |
 | **Branding** | `_brand.yml` | One palette and typography, used by the report, the app, the ggplot theme and the Python charts |
 
 ## Getting started
@@ -48,7 +50,9 @@ Then pick a door:
 
 ```bash
 quarto render trial-report.qmd                 # the report
-Rscript -e 'shiny::runApp("app.R")'            # the dashboard
+Rscript -e 'shiny::runApp("app.R")'            # the R dashboard
+uv run streamlit run streamlit_app.py          # the Python dashboard
+uv run pytest                                  # the Python tests
 uv run python python/run_ggsql.py              # every .ggsql file → outputs/
 uv run uvicorn server:app --app-dir mcp --port 8123   # the MCP server
 ```
@@ -78,8 +82,10 @@ computed from the data, not written by hand.
 
 `_brand.yml` is the only file to edit. Change the palette and the fonts there, and
 the Quarto report (`theme: brand`), the Shiny app (`bs_theme(brand = "_brand.yml")`),
-the ggplot theme (`canopytrials::theme_canopylab()`) and the notebook's matplotlib
-charts all follow. Drop a logo into the commented block at the bottom of the file
+the ggplot theme (`canopytrials::theme_canopylab()`), the Streamlit app's Altair
+charts (`python/charts.py` reads the same file) and the notebook's matplotlib
+charts all follow. Streamlit's own chrome is the one exception: it reads its theme
+from `.streamlit/config.toml`, where the same four colours are transcribed by hand. Drop a logo into the commented block at the bottom of the file
 to add it to the report and the app headers.
 
 ## Publishing to Posit Connect
@@ -92,8 +98,8 @@ export CONNECT_API_KEY="..."
 Rscript deploy.R
 ```
 
-That publishes the report and the dashboard; the script prints the two
-`rsconnect` commands for the notebook and the MCP server. Once
+That publishes the report and the Shiny app; the script prints the three
+`rsconnect` commands for the Streamlit app, the notebook and the MCP server. Once
 `CONNECT_SERVER`/`CONNECT_API_KEY` exist as repository secrets, every merge to
 `main` does the same thing without anybody clicking Publish — see
 `.github/workflows/deploy-connect.yml`.
@@ -110,6 +116,10 @@ Posit Assistant configuration that consumes it — see **[MCP-SETUP.md](MCP-SETU
   `tools::sha256sum`. The `.ggsql` files here are run through the Python API
   (`python/run_ggsql.py`), which works on any supported Python. The queries
   themselves are identical either way.
+- Altair chart fonts are declared as CSS-style stacks (`Open Sans, Helvetica,
+  Arial, sans-serif`) rather than bare family names. In a browser the brand font is
+  fetched from Google; in a static PNG export it may be absent, and `vl-convert`
+  given a font it cannot find drops every label silently.
 - Nothing in this repository has been deployed to a live Connect server — the
   deployment commands and CI workflow are written against Connect's documented
   interfaces but were not executed here.

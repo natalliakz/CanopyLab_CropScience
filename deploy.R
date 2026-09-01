@@ -63,15 +63,22 @@ rsconnect::deployApp(
 
 # 4. The Python content -----------------------------------------------------
 #
-# rsconnect-python handles the notebook and the MCP server. Run these from the
-# terminal — they are shown here so the whole deployment story lives in one file.
+# rsconnect-python handles the Streamlit app, the notebook and the MCP server.
+# Run these from the terminal — they are shown here so the whole deployment story
+# lives in one file.
 
 cat(
   "\nFrom the terminal, for the Python side:\n\n",
+  "  uv run rsconnect deploy streamlit \\\n",
+  "    --server $CONNECT_SERVER --api-key $CONNECT_API_KEY \\\n",
+  "    --entrypoint streamlit_app.py \\\n",
+  "    --title 'CanopyLab field trial explorer (Python)' \\\n",
+  "    --exclude .venv --exclude canopytrials --exclude renv .\n\n",
   "  uv run rsconnect deploy notebook \\\n",
   "    --server $CONNECT_SERVER --api-key $CONNECT_API_KEY \\\n",
   "    notebooks/field-trial-tour.ipynb\n\n",
   "  cp data/synthetic-agronomy.duckdb mcp/synthetic-agronomy.duckdb\n",
+  "  cp python/trials.py mcp/trials.py\n",
   "  uv run rsconnect deploy fastapi \\\n",
   "    --server $CONNECT_SERVER --api-key $CONNECT_API_KEY \\\n",
   "    --entrypoint server:app --title 'CanopyLab trials MCP' ./mcp\n\n",

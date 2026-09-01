@@ -1,6 +1,12 @@
 # Connect installs exactly this into the content's environment, from Posit
 # Package Manager. `fastmcp` in here is also how Connect auto-detects that this
 # content is an MCP server rather than a plain FastAPI API.
+#
+# polars and pyyaml are here because the bundle ships python/trials.py, the module
+# that owns the definition of "yield response" -- the server imports it rather
+# than keeping a second copy of the SQL.
 fastmcp==4.0.0
 duckdb==1.5.5
+polars==1.44.1
+pyyaml==6.0.3
 uvicorn==0.41.0

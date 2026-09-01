@@ -9,6 +9,7 @@ Run locally:
     uv run fastmcp run mcp/server.py:mcp --transport http --port 8000
 
 Publish to Connect (see MCP-SETUP.md for the whole story):
+    cp python/trials.py data/synthetic-agronomy.duckdb ./mcp/
     rsconnect deploy fastapi -n <server-nickname> --entrypoint server:app ./mcp
 
 The data in here is synthetic and exists for demonstration purposes only.
@@ -16,57 +17,33 @@ The data in here is synthetic and exists for demonstration purposes only.
 
 from __future__ import annotations
 
-import os
+import sys
 from pathlib import Path
 
-import duckdb
+import polars as pl
 from fastmcp import FastMCP
 
-DISCLAIMER = (
-    "CanopyLab Agronomics is a fictional company. This project contains synthetic "
-    "data and analysis created for demonstration purposes only."
-)
+# `trials` is the shared module the Streamlit app uses too. In the repository it
+# lives in python/; in a Connect bundle the deploy step copies it in beside this
+# file, because a bundle has no parent project to reach up into. Both locations go
+# on the path, nearest first, so the same file runs in both places.
+_here = Path(__file__).resolve().parent
+for _candidate in (_here.parent / "python", _here):  # inserted at 0, so _here wins
+    if str(_candidate) not in sys.path:
+        sys.path.insert(0, str(_candidate))
 
+import trials  # noqa: E402  (the path insert has to come first)
 
-def database_path() -> Path:
-    """Find the DuckDB file locally, in CI, and in a Connect content bundle.
-
-    Connect unpacks the bundle into its own directory, so nothing may assume the
-    repository layout. `CANOPYLAB_DB` wins, then a copy next to this file (which
-    is what the deploy step ships), then the project's data directory.
-    """
-    override = os.environ.get("CANOPYLAB_DB")
-    if override:
-        return Path(override)
-
-    here = Path(__file__).parent
-    candidates = [
-        here / "synthetic-agronomy.duckdb",
-        here.parent / "data" / "synthetic-agronomy.duckdb",
-    ]
-    for candidate in candidates:
-        if candidate.exists():
-            return candidate
-
-    raise FileNotFoundError(
-        "No synthetic-agronomy.duckdb found. Generate it first:\n"
-        "  uv run python data/generate_data.py"
-    )
+DISCLAIMER = "CanopyLab Agronomics is a fictional company. " + trials.DISCLAIMER
 
 
 def query(sql: str, params: list | None = None) -> list[dict]:
-    """One read-only connection per call, closed straight after.
+    """Read-only query, as plain dictionaries for the MCP wire format.
 
-    Connect may run several processes of this server, so a shared long-lived
-    handle to a file-backed database is the wrong shape.
+    `trials.query` does the connection handling -- one read-only connection per
+    call -- and this only reshapes the result.
     """
-    connection = duckdb.connect(str(database_path()), read_only=True)
-    try:
-        result = connection.execute(sql, params or [])
-        columns = [description[0] for description in result.description]
-        return [dict(zip(columns, row)) for row in result.fetchall()]
-    finally:
-        connection.close()
+    return trials.query(sql, params).to_dicts()
 
 
 mcp = FastMCP(
@@ -102,36 +79,30 @@ def yield_response(hybrid: str | None = None) -> list[dict]:
 
     The gain is measured against the same hybrid's own untreated plots, never the
     trial-wide average — hybrids differ in genetic potential, and crediting the
-    programme with genetics would overstate it.
+    programme with genetics would overstate it. The calculation itself is
+    `trials.yield_response()`, the same function the Streamlit dashboard calls, so
+    an assistant and a dashboard cannot report different numbers.
 
     Args:
         hybrid: Optional hybrid name, e.g. "CL-Ember 33". Omit for all hybrids.
     """
-    return query(
-        """
-        WITH means AS (
-            SELECT variety, treatment,
-                   avg(yield_t_ha) AS mean_yield,
-                   count(*)        AS plots
-            FROM field_trials
-            WHERE ? IS NULL OR variety = ?
-            GROUP BY variety, treatment
-        ),
-        checks AS (
-            SELECT variety, mean_yield AS check_yield
-            FROM means
-            WHERE treatment = 'Untreated Check'
+    plots = trials.read_plots()
+    if hybrid is not None:
+        plots = plots.filter(pl.col("variety") == hybrid)
+        if plots.is_empty():
+            raise ValueError(f"No plots for hybrid {hybrid!r}.")
+
+    return (
+        trials.yield_response(plots)
+        .select(
+            hybrid=pl.col("variety"),
+            programme=pl.col("treatment"),
+            plots=pl.col("plots"),
+            mean_yield_t_ha=pl.col("mean_yield_t_ha").round(2),
+            gain_vs_check_t_ha=pl.col("gain_vs_check_t_ha").round(2),
+            mean_disease_index=pl.col("mean_disease_index").round(1),
         )
-        SELECT m.variety                                       AS hybrid,
-               m.treatment                                     AS programme,
-               m.plots,
-               round(m.mean_yield, 2)                          AS mean_yield_t_ha,
-               round(m.mean_yield - c.check_yield, 2)          AS gain_vs_check_t_ha
-        FROM means m
-        JOIN checks c USING (variety)
-        ORDER BY m.variety, gain_vs_check_t_ha
-        """,
-        [hybrid, hybrid],
+        .to_dicts()
     )
 
 

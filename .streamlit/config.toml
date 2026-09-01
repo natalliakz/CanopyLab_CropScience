@@ -1,0 +1,14 @@
+# Streamlit reads its theme from TOML rather than from _brand.yml, so this file is
+# the one place where the brand colours are transcribed by hand. They are copied
+# from _brand.yml -- leaf, white, mist, black -- and the charts inside the app read
+# the same file the Quarto report and the Shiny app read, so a re-brand is two
+# edits rather than a hunt through the code.
+
+[theme]
+primaryColor = "#3E7B52"          # leaf
+backgroundColor = "#FFFFFF"       # white
+secondaryBackgroundColor = "#EFF3EE"  # mist
+textColor = "#1A1F1B"             # black
+
+[browser]
+gatherUsageStats = false

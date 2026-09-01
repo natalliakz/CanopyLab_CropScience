@@ -20,5 +20,11 @@ dependencies = [
     "pyyaml>=6.0.3",
     "rsconnect-python>=1.30.0",
     "scikit-learn>=1.8.0",
+    "streamlit>=1.62.0",
     "vl-convert-python>=1.9.0.post1",
+]
+
+[dependency-groups]
+dev = [
+    "pytest>=9.1.1",
 ]

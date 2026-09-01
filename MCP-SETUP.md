@@ -39,17 +39,20 @@ PY
 Expected: `['list_hybrids', 'yield_response', 'station_summary', 'season_trend',
 'run_sql', 'data_notice']`.
 
-## 2. Ship the database with the bundle
+## 2. Ship the database and the shared module with the bundle
 
-The server reads a DuckDB file. Connect unpacks the content bundle into its own
-directory, so the file has to travel with it:
+The server reads a DuckDB file, and it imports `python/trials.py` — the module
+that owns the definition of "yield response", so the assistant and the dashboards
+cannot answer the same question differently. Connect unpacks the content bundle
+into its own directory, so both have to travel with it:
 
 ```bash
 cp data/synthetic-agronomy.duckdb mcp/synthetic-agronomy.duckdb
+cp python/trials.py mcp/trials.py
 ```
 
 `mcp/server.py` looks for `$CANOPYLAB_DB`, then the copy beside itself, then
-`../data/`. In a real deployment you would point `CANOPYLAB_DB` at a mounted path,
+`../data/`, and imports `trials` from beside itself or from `../python/`. In a real deployment you would point `CANOPYLAB_DB` at a mounted path,
 or swap the DuckDB connection for your warehouse and let Connect hold the
 credential as an environment variable.
 
