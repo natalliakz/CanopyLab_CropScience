@@ -64,10 +64,19 @@ jobs:
       - name: Byte-compile the app and the server
         run: uv run python -m compileall -q streamlit_app.py python mcp
 
-      # connect/streamlit/ is what Connect deploys from Git, and it is built by
-      # copying files out of the project root. Nothing stops someone editing
-      # python/trials.py and forgetting to rebuild -- except this step, which
-      # fails the PR instead of letting the deployed app drift from the repo.
-      # Standard library only, so it needs no environment of its own.
+  # connect/streamlit/ is what Connect deploys from Git, and it is built by
+  # copying files out of the project root. Nothing stops someone editing
+  # python/trials.py and forgetting to rebuild -- except this job, which fails the
+  # PR instead of letting the deployed app drift from the repository.
+  #
+  # Its own job, with no dependencies to install: the script is standard library
+  # only, so this stays green even when a package index is unreachable, which is
+  # exactly when you least want to lose the guard.
+  connect-bundle:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
       - name: The git-backed Connect bundle matches its sources
-        run: python scripts/build_connect_bundle.py --check
+        run: python3 scripts/build_connect_bundle.py --check
