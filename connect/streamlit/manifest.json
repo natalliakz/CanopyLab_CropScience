@@ -1,0 +1,46 @@
+{
+  "version": 1,
+  "locale": "en_US.UTF-8",
+  "metadata": {
+    "appmode": "python-streamlit",
+    "entrypoint": "streamlit_app.py"
+  },
+  "python": {
+    "version": "3.13.2",
+    "package_manager": {
+      "name": "pip",
+      "package_file": "requirements.txt"
+    }
+  },
+  "environment": {
+    "python": {
+      "requires": ">=3.12"
+    }
+  },
+  "files": {
+    ".streamlit/config.toml": {
+      "checksum": "e301dab1249ab9a0c63d8e87b6e2a73b"
+    },
+    "_brand.yml": {
+      "checksum": "013103dc96e34bf85e8e4b9e3efc2fa6"
+    },
+    "data/synthetic-field-trials.csv": {
+      "checksum": "b0e3369d71d15fc113a16b6d416bca42"
+    },
+    "data/synthetic-sites.csv": {
+      "checksum": "b60ee8d20ee5e41bc32dba12e888a4a1"
+    },
+    "python/charts.py": {
+      "checksum": "a34ae36a02956e252bbd1c1b67c35a45"
+    },
+    "python/trials.py": {
+      "checksum": "413a11e489c96500bd611cd4698c21e5"
+    },
+    "requirements.txt": {
+      "checksum": "aa9ba6b0c296281302bb73f57a193241"
+    },
+    "streamlit_app.py": {
+      "checksum": "0967522c25248a03fb26c9b77f79372b"
+    }
+  }
+}

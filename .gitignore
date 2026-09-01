@@ -26,9 +26,10 @@ rsconnect/
 ehthumbs.db
 Thumbs.db
 
-# Data files - avoid tracking synthetic data; regenerate with
-#   uv run python data/generate_data.py
-data/*.csv
+# The two synthetic CSVs are committed: git-backed Connect deployment has no
+# build phase, so nothing can run generate_data.py before the content starts.
+# They are text, small and regenerable, and they diff. The DuckDB file is none of
+# those things, so it stays out; data-access code falls back to the CSVs.
 data/*.duckdb
 mcp/*.duckdb
 

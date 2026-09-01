@@ -215,6 +215,28 @@ Shiny app, Streamlit app, notebook, MCP server. Then
 `canopytrials`, and `uv sync --locked` plus `pytest` on the Python module — before
 it can merge. One pipeline, both languages, no separate release process.
 
+**4.3b And the version with no pipeline at all.** In Connect: **New Content →
+Import from Git**, this repository, branch `main`, subdirectory
+`connect/streamlit`. Connect polls the branch and re-deploys itself. No secrets in
+GitHub, no runner, no `rsconnect` command — for a team that is not ready to own a
+CI pipeline, this is the shortest path from "we have Git" to "it deploys."
+
+The engineering point, and it is worth making because it is where people get
+stuck: git-backed content has **no build step**. Connect installs
+`requirements.txt` and runs the entrypoint against the committed files — so the
+directory has to be self-contained. Open `connect/streamlit/` and show it: the
+app, the shared module, `_brand.yml`, the data as CSVs, five pinned packages, a
+`manifest.json`. It is a mirror of the project root, built by
+`scripts/build_connect_bundle.py`, and the `Checks` workflow fails any PR where a
+copy has fallen behind its original — so "there are two copies of trials.py" is a
+CI failure rather than a mystery.
+
+The same constraint is why `app.R` sources `canopytrials/R/*.R` instead of calling
+`library(canopytrials)`, and it is your Package Manager segue: **Connect can
+restore anything in Package Manager, and nothing that only exists in your Git
+repository.** Put the internal package in a Package Manager local repository and
+`library(canopytrials)` works in git-backed content too.
+
 The transformation Luis described, stated plainly: **`main` is the definition of
 what is running.** No one publishes from a laptop; no one wonders which version is
 live; the deployment record is the commit history. And because the CI runner
@@ -285,7 +307,7 @@ real hybrid or product name.
 
 ```bash
 uv sync
-uv run python data/generate_data.py
+uv run python data/generate_data.py          # CSVs are committed; this builds the DuckDB file
 Rscript -e 'renv::restore()'
 R CMD INSTALL canopytrials
 quarto render trial-report.qmd
@@ -296,7 +318,10 @@ uv run python python/run_ggsql.py            # warms outputs/
 Then:
 
 1. Publish the five content items to your Connect demo server (`Rscript deploy.R`
-   plus the three printed commands), so Act 4 shows real content pages.
+   plus the three printed commands), so Act 4 shows real content pages. For 4.3b,
+   import `connect/streamlit` from Git as a *sixth* content item and let the two
+   Streamlit apps sit side by side in the content list — published two ways, same
+   app.
 2. Deploy the MCP server and configure `.posit/assistant/settings.json` with your
    Connect URL. Export `CONNECT_API_KEY` in the shell you launch Positron from,
    and confirm `/mcp` shows it connected. **Do this the day before** — it is the
@@ -347,10 +372,12 @@ Package Manager all run in your VPC or on-prem, on your images.
   `tools::sha256sum` error). The `.ggsql` files here run through the Python API,
   which is the right story for this audience anyway. Do not promise the R binding
   live unless you have tested it on your R version.
-- `canopytrials` is installed from source here. Before Connect can restore it, it
-  needs a home: a local source repository in Package Manager, or a Git remote that
-  `renv` can install from. Worth saying out loud — it is a natural Package Manager
-  segue.
+- `canopytrials` is installed from source here, and Connect cannot restore a
+  package that lives only in this repository. Both deployed apps work around it:
+  `app.R` sources `canopytrials/R/*.R`, and the Streamlit bundle ships
+  `python/trials.py` and needs no R at all. The real fix is a local source
+  repository in Package Manager — say that out loud rather than hiding it, because
+  it is the natural Package Manager segue (4.3b).
 - Altair's PNG export needs font *stacks*, not `"Open Sans"` on its own: given a
   font it cannot find, `vl-convert` renders the chart and silently drops every
   label. `python/charts.py` names fallbacks. If you add a chart and the labels

@@ -1,0 +1,7 @@
+site_id,site_name,region,soil_type,elevation_m,normal_rainfall_mm
+S01,North Ridge Station,Northern Plains,Silt loam,415,520
+S02,Clay Flats Station,Northern Plains,Heavy clay,380,470
+S03,River Bend Station,Central Valley,Sandy loam,210,610
+S04,Lakeview Station,Central Valley,Silt loam,245,655
+S05,Sandhill Station,Eastern Belt,Loamy sand,160,700
+S06,High Plains Station,Eastern Belt,Clay loam,520,430

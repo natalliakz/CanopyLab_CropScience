@@ -29,7 +29,8 @@ that decides what is running in production.
 | **SQL** | `sql/*.sql`, `sql/*.ggsql` | Plain SQL for the Connections pane, plus ggsql queries that draw charts straight from the database |
 | **Charts** | `python/run_ggsql.py` | Runs any `.ggsql` file to an interactive HTML chart and a PNG |
 | **Assistant tools** | `mcp/server.py` | An MCP server published to Connect, callable from Posit Assistant |
-| **CI/CD** | `.github/workflows/` | Publish to Connect on merge to `main`; check the R package and run the Python tests on every PR |
+| **Git-backed content** | `connect/streamlit/` | A self-contained bundle Connect deploys straight from the repository — no build step, no CI runner. Assembled by `scripts/build_connect_bundle.py`. |
+| **CI/CD** | `.github/workflows/` | Publish to Connect on merge to `main`; check the R package, run the Python tests and verify the git-backed bundle on every PR |
 | **Branding** | `_brand.yml` | One palette and typography, used by the report, the app, the ggplot theme and the Python charts |
 
 ## Getting started
@@ -38,7 +39,8 @@ that decides what is running in production.
 # 1. Python side
 uv sync
 
-# 2. Generate the synthetic data (not committed — it is regenerable)
+# 2. Build the DuckDB database. The two CSVs are committed; the database is
+#    derived from them and is not, so make it once.
 uv run python data/generate_data.py
 
 # 3. R side
@@ -104,14 +106,43 @@ That publishes the report and the Shiny app; the script prints the three
 `main` does the same thing without anybody clicking Publish — see
 `.github/workflows/deploy-connect.yml`.
 
+### Or let Connect deploy from Git
+
+Connect can also read this repository directly: **New Content → Import from
+Git**, branch `main`, subdirectory `connect/streamlit`. No secrets, no runner, no
+publish command — Connect re-deploys whenever the branch moves.
+
+Git-backed content has no build phase, which shapes three things in this
+repository:
+
+- the two synthetic CSVs are **committed**, because nothing can run
+  `generate_data.py` before the app starts. `python/trials.py` opens the DuckDB
+  file when it finds one and builds the same relations over the CSVs when it does
+  not, so the numbers are identical either way.
+- `connect/streamlit/` is **self-contained** — the app, `python/trials.py`,
+  `python/charts.py`, `_brand.yml`, the data, a five-package `requirements.txt`
+  and a `manifest.json`. It is a mirror of the project root, assembled by
+  `uv run python scripts/build_connect_bundle.py`, and CI fails any pull request
+  where it has drifted from its sources.
+- nothing in that bundle needs a package Connect cannot restore. Same reason
+  `app.R` sources `canopytrials/R/*.R` instead of calling
+  `library(canopytrials)`: the package exists only in this repository, so Connect
+  reads the code rather than trying to build it.
+
+`connect/streamlit/README.md` has the details.
+
 For the MCP server specifically — the three Connect settings it needs and the
 Posit Assistant configuration that consumes it — see **[MCP-SETUP.md](MCP-SETUP.md)**.
 
 ## Notes and known limits
 
-- The synthetic data is regenerated, not committed. `uv run python
-  data/generate_data.py` is deterministic (fixed seed), so everyone gets the same
-  1,800 plots.
+- The two synthetic CSVs are committed so that git-backed Connect content has
+  data to read; the DuckDB file is not. `uv run python data/generate_data.py` is
+  deterministic (fixed seed), so rebuilding it gives everyone the same 1,800
+  plots and the same CSVs.
+- Everything in `connect/streamlit/` except `requirements.txt` and its README is
+  a generated copy. Edit the originals and rebuild; the copies are checked in
+  because Connect deploys what is committed.
 - `ggsql` for R needs R ≥ 4.5; the R install fails on 4.4.x with an error about
   `tools::sha256sum`. The `.ggsql` files here are run through the Python API
   (`python/run_ggsql.py`), which works on any supported Python. The queries

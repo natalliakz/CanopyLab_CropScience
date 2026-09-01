@@ -148,3 +148,58 @@ def test_database_path_says_how_to_fix_a_missing_file(monkeypatch, tmp_path):
 
     with pytest.raises(FileNotFoundError, match="generate_data.py"):
         trials.database_path()
+
+
+def test_csv_paths_says_how_to_fix_missing_data(monkeypatch, tmp_path):
+    monkeypatch.setenv("CANOPYLAB_ROOT", str(tmp_path))
+    monkeypatch.setattr(trials, "__file__", str(tmp_path / "trials.py"))
+
+    with pytest.raises(FileNotFoundError, match="generate_data.py"):
+        trials.csv_paths()
+
+
+def csv_only_project(root: Path) -> None:
+    """A project directory holding the two CSVs and no database.
+
+    Which is exactly the shape of `connect/streamlit/`: a git-backed Connect
+    deployment has no build step, so the data it starts with is the data that was
+    committed.
+    """
+    data = root / "data"
+    data.mkdir()
+    (data / "synthetic-field-trials.csv").write_text(
+        "site_id,site_name,region,season,variety,treatment,replicate,"
+        "rainfall_mm,disease_pressure_index,yield_t_ha\n"
+        "1,Test Station,Test Region,2025,CL-Test 01,Untreated Check,1,500,55.0,8.0\n"
+        "1,Test Station,Test Region,2025,CL-Test 01,Programme Bravo,1,500,11.0,10.0\n"
+    )
+    (data / "synthetic-sites.csv").write_text(
+        "site_id,site_name,region,soil_type,elevation_m,normal_rainfall_mm\n"
+        "1,Test Station,Test Region,Loam,120,520\n"
+    )
+
+
+def test_the_csvs_stand_in_for_the_database(monkeypatch, tmp_path):
+    """No DuckDB file, same three relations, same answers."""
+    csv_only_project(tmp_path)
+    monkeypatch.setenv("CANOPYLAB_ROOT", str(tmp_path))
+    monkeypatch.delenv("CANOPYLAB_DB", raising=False)
+    monkeypatch.setattr(trials, "__file__", str(tmp_path / "python" / "trials.py"))
+
+    with pytest.raises(FileNotFoundError):
+        trials.database_path()
+
+    plots = trials.read_plots()
+    assert plots.height == 2
+    assert {"soil_type", "elevation_m", "normal_rainfall_mm"} <= set(plots.columns)
+
+    assert trials.read_sites().height == 1
+
+    # The view the DuckDB file carries is rebuilt over the CSVs, so a query
+    # written against the database in the Connections pane still runs here.
+    summary = trials.query("SELECT * FROM variety_season_summary ORDER BY treatment")
+    assert summary.height == 2
+
+    assert gain_for(
+        trials.yield_response(plots), "CL-Test 01", "Programme Bravo"
+    ) == pytest.approx(2.0)

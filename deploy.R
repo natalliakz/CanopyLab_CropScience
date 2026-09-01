@@ -47,6 +47,11 @@ rsconnect::deployDoc(
 # appFiles is explicit on purpose: the DuckDB file, the outputs directory and
 # the notebook do not belong in the app bundle, and a smaller bundle restarts
 # faster.
+#
+# The three canopytrials R files are in the list because app.R sources them
+# instead of calling library(canopytrials). Connect can restore anything that is
+# on CRAN or in Package Manager; a package that only exists in this repository is
+# the one thing it cannot, so the app reads the code rather than the package.
 
 rsconnect::deployApp(
   appDir = ".",
@@ -54,7 +59,10 @@ rsconnect::deployApp(
     "app.R",
     "_brand.yml",
     "data/synthetic-field-trials.csv",
-    "data/synthetic-sites.csv"
+    "data/synthetic-sites.csv",
+    "canopytrials/R/brand.R",
+    "canopytrials/R/data-access.R",
+    "canopytrials/R/summaries.R"
   ),
   appName = "canopylab-trial-explorer",
   server = "connect",
@@ -69,11 +77,13 @@ rsconnect::deployApp(
 
 cat(
   "\nFrom the terminal, for the Python side:\n\n",
-  "  uv run rsconnect deploy streamlit \\\n",
+  "  uv run python scripts/build_connect_bundle.py\n",
+  "  uv run rsconnect deploy manifest \\\n",
   "    --server $CONNECT_SERVER --api-key $CONNECT_API_KEY \\\n",
-  "    --entrypoint streamlit_app.py \\\n",
   "    --title 'CanopyLab field trial explorer (Python)' \\\n",
-  "    --exclude .venv --exclude canopytrials --exclude renv .\n\n",
+  "    connect/streamlit/manifest.json\n\n",
+  "  (or point Connect at connect/streamlit/ in Git and skip that entirely --\n",
+  "   see connect/streamlit/README.md)\n\n",
   "  uv run rsconnect deploy notebook \\\n",
   "    --server $CONNECT_SERVER --api-key $CONNECT_API_KEY \\\n",
   "    notebooks/field-trial-tour.ipynb\n\n",
