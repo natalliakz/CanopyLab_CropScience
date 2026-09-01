@@ -5,7 +5,7 @@ requires-python = ">=3.12"
 dependencies = [
     "altair>=6.2.2",
     "duckdb>=1.5.5",
-    "fastmcp>=4.0.0",
+    "fastmcp>=3.0.0",
     "ggsql>=0.3.3",
     "great-tables>=0.24.0",
     "ipykernel>=7.3.0",
@@ -28,3 +28,6 @@ dependencies = [
 dev = [
     "pytest>=9.1.1",
 ]
+
+[tool.uv]
+environments = ["sys_platform != 'win32'"]

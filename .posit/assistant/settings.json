@@ -2,9 +2,9 @@
   "mcpServers": {
     "canopylab-trials": {
       "type": "remote",
-      "url": "https://connect.example.com/canopylab-trials-mcp/mcp",
+      "url": "https://pct.demo.soleng.posit.it/content/81144317-aa85-4f45-9c4d-24e44ec4c782/mcp",
       "headers": {
-        "Authorization": "Key {env:CONNECT_API_KEY}"
+        "Authorization": "Key R4cpFptIUkUlBnWdDlhc6D7uspnSMGAF"
       },
       "enabled": true
     }

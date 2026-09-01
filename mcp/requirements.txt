@@ -5,7 +5,7 @@
 # polars and pyyaml are here because the bundle ships python/trials.py, the module
 # that owns the definition of "yield response" -- the server imports it rather
 # than keeping a second copy of the SQL.
-fastmcp==4.0.0
+fastmcp==3.4.7
 duckdb==1.5.5
 polars==1.44.1
 pyyaml==6.0.3

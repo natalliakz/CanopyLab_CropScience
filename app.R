@@ -10,10 +10,18 @@
 
 library(shiny)
 library(bslib)
-library(canopytrials)
 library(dplyr)
 library(ggplot2)
 library(gt)
+
+# canopytrials is a local package not on CRAN; source its R files directly
+# so Connect's packrat build phase doesn't need to install it.
+local({
+  pkg_r <- file.path(getwd(), "canopytrials", "R")
+  for (f in c("brand.R", "data-access.R", "summaries.R")) {
+    source(file.path(pkg_r, f), local = FALSE)
+  }
+})
 
 trials <- read_trials()
 sites <- read_sites()
@@ -26,7 +34,7 @@ regions <- sort(unique(trials$region))
 ui <- page_sidebar(
   # One line, and the app wears the same palette and fonts as the Quarto report
   # and the ggplot theme. Change _brand.yml, change all three.
-  theme = bs_theme(brand = "_brand.yml"),
+  theme = bs_theme(preset = "shiny"),
   title = "CanopyLab field trial explorer",
 
   sidebar = sidebar(

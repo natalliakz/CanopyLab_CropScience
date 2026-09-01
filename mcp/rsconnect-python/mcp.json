@@ -1,0 +1,12 @@
+{
+    "https://pct.demo.soleng.posit.it/": {
+        "server_url": "https://pct.demo.soleng.posit.it/",
+        "filename": "/home/natallia.drobau/CanopyLab_CropScience/mcp",
+        "app_url": "https://pct.demo.soleng.posit.it/content/81144317-aa85-4f45-9c4d-24e44ec4c782/",
+        "app_id": "313",
+        "app_guid": "81144317-aa85-4f45-9c4d-24e44ec4c782",
+        "title": "CanopyLab trials MCP",
+        "app_mode": "python-fastapi",
+        "app_store_version": 1
+    }
+}
